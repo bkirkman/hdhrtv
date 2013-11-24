@@ -1,0 +1,158 @@
+HDHRTV - a streaming server for the HDHomeRun PRIME cable tuner that can
+stream a native MPEG2 TS stream or transcoded flash stream. MythTV program
+listings can be displayed if a MythTV server is available.
+
+
+1. Disclaimer
+
+HDHRTV is a hobby project that has been developed to serve a need but not
+be a perfect body of code. It most likely will contain bugs. Please note that
+security is ultimately the responsibility of the person installing software
+on a server. It is highly encouraged to secure any public facing server with
+password protection and encryption. 
+
+The transcoding and streaming method used by HDHRTV is rather crude and
+simplistic. The possibility exists that FFmpeg processes could become orphaned
+when streams are not cleanly initiated or closed. Please check for orphaned
+FFmpeg processes on a regular basis if the streaming server is being regularly used. 
+
+
+2. Overview
+
+The HDHomeRun PRIME is a CableCard tuner device capable of HTTP streaming the
+native MPEG2 TS digital cable stream tuned by the device over a network.
+Unfortunately, this stream is typically too large to stream over WiFi or outside
+the local network, though the native standard definition stream will stream okay,
+in most cases, over WiFi on the local network. In order to allow streaming to any
+location, HDHRTV transcodes the MPEG stream to a flash video and streams it via a
+web page. Though Apple devices have embraced HTML 5 and HTTP Live Streaming (HLS),
+it seems that the rest of the world is slow to get on board. Android seems to only
+have mild success with HLS depending on what 3rd party applications have been
+installed. As such, HDHRTV has been developed to stream Flash until the rest of the
+OS world catches up to HTML 5 and HLS streaming. If interested in setting up an HLS
+server for the HDHomeRun PRIME, consider using Wallop (http://jonmaddox.com/wallop/).
+For direct streaming using Android device, consider using MX Player or Daroon Player.
+Standard definition flash streaming should work on nearly any server. HD channels
+will require that a decent, modern processor be used for transcoding. Also note that
+a couple of ffmpeg configurations have been set up in the configuration file. One
+uses the original Sorenson flv codec. This codec cannot multithread, so it will 
+most likely not be effective transcoding HD channels. The other ffmpeg configuration
+uses h.264 video and mp3 audio in an flv container. This configuration is capable
+of multithreading and should be able to transcode HD video.
+
+3. Credits
+
+- GUI modeled after Web1.0MPC (http://web10mpc.geuecke.org/)
+- Thanks to Jon Maddox and his Wallop server which is an HDHR streaming server for
+  iOS and other devices that can stream HTML5 (https://github.com/maddox/wallop/ or
+  http://jonmaddox.com/wallop/)
+
+
+4. License
+
+GPLv2 - see COPYING file.
+
+
+5. Requirements
+
+- HDHomeRun PRIME capable of HTTP streaming
+- Apache or similar webserver
+- PHP >= 5.1
+- FFmpeg
+- MythTV (optional for channel listings and info)
+
+Development system: CentOS 6.4, Apache 2.2.15, PHP 5.3.3, MythTV .26,
+FFmpeg 1.2.4, HDHomeRun Prime.
+
+
+6. Features
+
+Main Page / Listing:
+- The main home page lists all the channels available.
+  If MythTV is being used, then the channel data and
+  listing info will be retrieved from MythTV. If MythTV
+  is not being used, then channel data will be retrieved
+  from the HDHomeRun. The HDHomeRun only provides channel
+  number and name.
+- Channel icons can be shown on the channel listings.
+  Icons are configured in ./config/channel_icon_map.php.
+  Icons reside in ./public/images/channel_icons/
+- The play button on the left can be configured to start
+  the flash player or provide a direct HTTP link to the
+  HDHomeRun PRIME.
+- If the direct link to the stream is selected, the client
+  device must be configured to play this link. On Android,
+  consider using MX Player or Daroon. On a standard computer,
+  consider VLC.
+
+Channel Details:
+- The channel details page is shown when selecting the arrow
+  on the right of an individual channel on the listings page.
+  The detail page will show information for the selected
+  channel. If MythTV listings are being used, program details
+  and start/stop time will be shown. From this details page,
+  the user can select a link to play the channel via a direct
+  URL or via the flash player.  
+
+Settings:
+- The user can adjust general and transcoding settings.
+  The settings are stored in a user cookie. If cookies
+  aren't enabled, then the default settings defined in the
+  config file will be used. 
+
+
+7. Installation
+
+- Extract the files to a directory on your webserver.
+- Check and adjust file and directory permissions.
+- Make any additional adjustments to the server as necessary for the specific
+  application directory, such as password protection, etc.  
+- Edit ./config/config.php. The config file contains three sections. The first
+  section contains the application settings, all defined in the $config[] array.
+  The next section contains the ffmpeg transcoding settings, all defined in the
+  $ffmpeg_cmd[] array. The last section contains the user settings, the
+  respective setting's selections, and the default setting, all within a nested
+  array defined by the $user_config[] array.
+- All of the config file settings are well documented.
+- Edit the ./config/channel_icon_map.php file to assign channel icon images to
+  channel numbers. Add channel icon images to ./public/images/channel_icons 
+  as necessary.
+
+
+8. Tips and Tricks
+
+- For direct streaming to Android, there has been success with both MX Player and
+  Daroon Player depending on the hardware and Android version.
+- If HDHRTV is running on a server without enough processing power, it is possible 
+  to use ssh and have another machine with greater processing capabilities take care of
+  transcoding. Revise the ffmpeg command lines from 'ffmpeg' to 'ssh user@remote ffmpeg'
+  in the config file. The remote machine will transfer its standard output to the server
+  running HDHRTV. Remote ssh keys will need to be set up to allow for apache, or whatever
+  user is used to run the webserver, to connect to the remote machine and execute ffmpeg.
+  See (http://mingstert.blogspot.com/2009/11/ssh-via-apache-deamon-user.html) 
+
+
+9. Known issues
+
+- The php web page uses a very simple 'passthru' command to stream the output of ffmpeg
+  to the web page's flash player. If the server has issues transcoding or streaming
+  the video, the php page will stop responding and the ffmpeg process will be orphaned.
+  If an ffmpeg process is orphaned, it typically won't increase the server's load. The
+  server administrator should 'ps aux | grep ffmpeg' for orphaned ffmpeg processes from
+  time to time and clean up as necessary.
+
+
+10. Possible TODO Items
+
+- Monitor for ophaned ffmpeg processed and terminate gracefully if discovered.
+  Consider usind PID files.
+- Add user option to terminate any orphaned ffmpeg processes.
+- Add more options and information to Flowplayer, such as 'now playing',
+  adjust bitrate, mini-EPG. Mini-EPG could be a menu of favorite channels.
+- Favorite channels
+
+
+11. History
+
+version 0.1 (2013-11-23):
+- initial release
