@@ -10,27 +10,47 @@
 // Web Page Title
 $config['page_title'] = 'HDHR TV';
 
-// HDHomeRun protocol, IP, and port settings
-$config['hdhr_protocol'] = 'http';
-$config['hdhr_ip'] = '192.168.1.10';
+// HDHR Type
+// Set the box type, either to the
+// newer DLNA boxes or the old legacy,
+// non-DLNA boxes. If set as a DLNA box,
+// streaming over http will be used.
+// If a legacy box is used, note that
+// hdhomerun_config MUST be installed on
+// the server and executable by the webserver
+// in order to stream.
+// $config['hdhr_type'] = [dlna | legacy]
+$config['hdhr_type'] = 'dlna';
+
+// IP address of tuner
+$config['hdhr_ip'] = '192.168.1.20';
+
+// HTTP port to connect to tuner.
+// This is only for DLNA boxes.
 $config['hdhr_port'] = '5004';
 
 // Set HDHR tuner
 // This can be tuner0, tuner1, tuner2, or auto.
+// Only the DLNA tuners can be set to auto.
 // Note that if MythTV is being used, MythTV
 // won't lock the HDHR tuner, so conflicts could
 // exist between MythTV and anything else, such as
 // this streaming app, that tries to access the HDHR.
-// If using MythTV, set this to tuner2 and hope that
-// MythTV will only need to use tuner0 and tuner 1.
-// If not using MythTV, set this to auto.
+// If using MythTV, set this to the highest tuner
+// and hope that MythTV will only use the lower tuner(s).
+// If not using MythTV and this is a DLNA tuner,
+// set this to auto.
 //
 // $config['hdhr_tuner'] = [tuner0 | tuner1 | tuner2 | auto]
-$config['hdhr_tuner'] = 'auto';
+$config['hdhr_tuner'] = 'tuner0';
 
-// Set the command to reboot the HDHomeRun.
-// Leave blank to diable this feature.
-$config['hdhr_reboot_cmd'] = "hdhomerun_config {$config['hdhr_ip']}  set /sys/restart self";
+// Allow user to set tuner.
+// If true, this will allow the user to set
+// the tuner in the user settings of the web app.
+// Understand the risk in allowing this.
+// See comments above.
+// $config['user_tuner'] = [true | false]';
+$config['user_tuner'] = true;
 
 // Enable MythTV listings to be used.
 // The user will be able to choose between
@@ -40,12 +60,44 @@ $config['hdhr_reboot_cmd'] = "hdhomerun_config {$config['hdhr_ip']}  set /sys/re
 // $config['enable_mythtv'] = [true | false];
 $config['enable_mythtv'] = false;
 
+// Define the hdhomerun_config binary
+// location. Include the full path as necessary.
+$config['hdhr_utility'] = 'hdhomerun_config';
+
+// Set the command to reboot the HDHomeRun.
+$config['hdhr_reboot_cmd'] = "{$config['hdhr_utility']} {$config['hdhr_ip']}  set /sys/restart self";
+
+// Allow rebooting of the HDHomeRun
+$config['enable_reboot'] = true;
+
+// Define the output type for ffmpeg to stream
+// via http. The passthru option will use a simple
+// php passthru() function to stream the flv output
+// of ffmpeg to the browser/Flowplayer. The other
+// option is buffer which 
+// $config['output_type'] = [passthru | buffer];
+$config['output_type'] = 'passthru';
+
+// This setting determines if errors should
+// be displayed in the browser.
+$config['debug'] = false;
+
 // MythtTV database settings if MythTV
 // listings are to be used.
 $config['mythtv_server'] = 'localhost';
 $config['mythtv_db'] = 'mythconverg';
 $config['mythtv_user'] = 'mythtv';
 $config['mythtv_pass'] = 'mythtv';
+
+// PHP executable command.
+// This will only be used to run
+// a channel scan for legacy devices.
+// This could simply be 'php' if the
+// executable is in the path of the
+// web server. Or it could be the full
+// path, such as /usr/bin/php if
+// needed.
+$config['php'] = 'php';
 
 
 #################################
@@ -54,7 +106,33 @@ $config['mythtv_pass'] = 'mythtv';
 #                               #
 #################################
 
-// The following are ffmpeg commands.
+// Define the ffmpeg binary location.
+// Include the full path as necessary,
+// such as /usr/bin/ffmpeg or
+// /usr/local/bin/ffmpeg. Most of the
+// time, straight ffmpeg should work
+// as it should be included in the
+// defined PATH of the webserver user.
+// Customize as necessary for any
+// custom ffmpeg installations.
+// Verify any custom installations
+// can be run by the webserver user.
+$config['ffmpeg_cmd'] = 'ffmpeg';
+
+// If this setting is configured, ffmpeg
+// transcoding will be offloaded via ssh
+// to a remote machine. Leave blank to
+// disable. Note tha certifcates should
+// be set up for the user which the web
+// server is running as.
+//
+// $config['remote_ssh'] = 'user@remote_machine';
+$config['remote_ssh'] = '';
+
+// The following are ffmpeg options.
+// These options are placed after the binary and the
+// input stream.
+// i.e. ffmpeg -y -i stream {options}
 // The variable name is placed in the user setting array,
 // named, and in turn selected by the user. 
 
@@ -63,10 +141,7 @@ $config['mythtv_pass'] = 'mythtv';
 // This creates a standard flv stream using the sorenson codec.
 // This cannot be multithreaded so it most likely won't work
 // very well for HD video.
-$ffmpeg_cmd['flv'] = "ffmpeg"
-		." -y"
-		." -i {$config['hdhr_protocol']}://{$config['hdhr_ip']}:{$config['hdhr_port']}/{$config['hdhr_tuner']}/v{channel}"
-		." -threads 0"
+$ffmpeg_opts['flv'] = "-threads 0"
 		." -g 30"
 		." -f flv"
 		." -async 2"
@@ -75,16 +150,12 @@ $ffmpeg_cmd['flv'] = "ffmpeg"
 		." -b:a {abr}"
 		." -vf {deint}"
 		."scale=\"{size}\""
-		." -b:v {vbr}"
-		." /dev/stdout 2>/dev/null";
+		." -b:v {vbr}";
 
 // This command transcodes to h264 video, mp3 audio,
 // and places in an flv container. The libx264 library
 // can be multithreaded which is better suited for HD video.
-$ffmpeg_cmd['h264'] = "ffmpeg"
-		." -y"
-		." -i {$config['hdhr_protocol']}://{$config['hdhr_ip']}:{$config['hdhr_port']}/{$config['hdhr_tuner']}/v{channel}"
-		." -threads 0"
+$ffmpeg_opts['h264'] = "-threads 0"
 		." -f flv"
 		." -vf {deint}"
 		."scale=\"{size}\""
@@ -93,13 +164,22 @@ $ffmpeg_cmd['h264'] = "ffmpeg"
 		." -preset:v ultrafast"
 		." -b:v {vbr}"
 		." -c:a libmp3lame"
-		//." -async 2"
 		." -ac 2"
 		." -b:a {abr}"
 		." -ar {asamp}"
-		." -strict -2"
-		." /dev/stdout 2>/dev/null";
+		." -strict -2";
 
+// Provide an audio-only stream with no video. Use this
+// to listen to an NFL playoff game while ice fishing on
+// Lake of the Woods, Minnesota with limited mobile bandwith.
+$ffmpeg_opts['audio_only'] = "-threads 0"
+		." -f flv"
+		." -vn"
+		." -c:a libmp3lame"
+		." -ac 2"
+		." -b:a {abr}"
+		." -ar {asamp}"
+		." -strict -2";
 
 
 #################################
@@ -109,7 +189,10 @@ $ffmpeg_cmd['h264'] = "ffmpeg"
 #################################
 
 // Set the cookie name for storing user settings
-define('COOKIE_NAME', 'hdhrtv_settings');
+define('COOKIE_SETTINGS', 'hdhrtv_settings');
+
+// Set the cookie name for storing user favorites
+define('COOKIE_FAVORITES', 'hdhrtv_favorites');
 
 // The following are user settings
 // and their respective defaults.
@@ -132,6 +215,16 @@ $user_config['play_link'] =
 		array('flash' => 'Flash Player',
 		      'direct' => 'Direct Link'),
 		'default' => 'flash');
+	
+// Set the link for the play button shown
+// on each individual line in the channel list.
+$user_config['tuner'] =
+	array('selections' => 
+		array('tuner0' => 'tuner0',
+		      'tuner1' => 'tuner1',
+		      'tuner2' => 'tuner2',
+		      'auto' => 'auto'),
+		'default' => 'auto');
 
 // Set the video size either as a defined size or
 // scaled to the original source.
@@ -195,12 +288,13 @@ $user_config['deint'] =
 	array('selections' => 
 		array('yadif,' => 'Yes',
 		      '' => 'No'),
-		'default' => 'yadif,');
+		'default' => '');
 
 // Set up the transcoding selection.
 // This selects from the ffmpeg commands above.
 $user_config['transcode'] =
 	array('selections' => 
 		array('h264' => 'h264/mp3/flv (multithread)',
-		      'flv' => 'FLV (no multithread)'),
+		      'flv' => 'FLV (no multithread)',
+		      'audio_only' => 'Audio Only'),
 		'default' => 'h264');

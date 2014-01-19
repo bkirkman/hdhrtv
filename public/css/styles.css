@@ -27,14 +27,40 @@ background-color: #f5f5f5;
 z-index: 5;
 }
 
+div#fixed_header_2 {
+top: 45px;
+width: 360px;
+max-width: 100%;
+position: fixed;
+height: 45px;
+background-color: #f5f5f5;
+z-index: 5;
+}
+
 .header_left {
 position: relative;
 top: 7px;
 }
 
-.header_right img{
+.header_right1 img{
 position: absolute;
 right: 20px;
+top: 8px;
+height: 35px;
+width: 35px;
+}
+
+.header_right2 img{
+position: absolute;
+right: 70px;
+top: 8px;
+height: 35px;
+width: 35px;
+}
+
+.header_right3 img{
+position: absolute;
+right: 115px;
 top: 8px;
 height: 35px;
 width: 35px;
@@ -44,12 +70,25 @@ div#header_spacer {
 height: 50px;
 }
 
+div#header_spacer_2 {
+height: 90px;
+}
+
 div.dark {
 background-color: #e4e4e4;
 }
 
 div.channel_row {
 margin-left: 50px; 
+margin-right: 60px; 
+font-size: 14px;
+padding: 5px 0px 5px 0px;
+position: relative;
+z-index: 2;
+}
+
+div.favorites_row {
+margin-left: 15px; 
 margin-right: 60px; 
 font-size: 14px;
 padding: 5px 0px 5px 0px;
@@ -75,6 +114,14 @@ z-index: 1;
 }
 
 .row_right img{
+position: absolute;
+top: 5px;
+right: -50px;
+height: 32px;
+width: 32px;
+}
+
+img.row_right {
 position: absolute;
 top: 5px;
 right: -50px;
@@ -115,4 +162,27 @@ font-size: 11px;
 
 a {
 color: #555753;
+}
+
+a, img {
+    border:none;
+}
+
+hr {
+  margin-left: 10px;
+  margin-right: 10px;
+}
+
+#scan_button {
+  margin-left: 10px;
+  margin-top: 10px;
+  font-size: 14px;
+  width: 140px;
+}
+
+/* Id for '...scanning' image that pops up during channel scan */
+#scan_img {
+	position:fixed;
+	left:160px;
+	top: 55px;
 }

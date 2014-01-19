@@ -18,18 +18,26 @@
  *
  */
 
-	define('CONFIG', 'my_config');
-	include_once(dirname(__FILE__).'/../config/config.php');
-	include_once(dirname(__FILE__).'/../config/channel_icon_map.php');
-	include_once(dirname(__FILE__).'/../classes/view.php');
-	include_once(dirname(__FILE__).'/../classes/settings.php');
-	include_once(dirname(__FILE__).'/../classes/favorites.php');
+	// Call this to load config settings and View class
+	include('./includes/main.php');
+ 
+	// Load view 
+	$view = new View();
 
-	if ($config['debug'] == true)
+	// Set page title
+	$data['page_title'] = $config['page_title'];
+
+	// check tuner type
+	if ($config['hdhr_type'] != 'legacy')
 	{
-		error_reporting(E_ALL);
-		ini_set('display_errors', 'on');
+		// Set message
+		$data['message'] = 'Channel scan only avaialable for non-DLNA tuners. Change configuration ' . 
+					'settings on server to legacy non-DLNA tuner if required.';
+	
+		// Display view
+		echo $view->display('views/notice', $data);
+		die();
 	}
 
-	$settings = new Settings($user_config);
-	$user_settings = $settings->get_user_settings();
+	// Display view
+	echo $view->display('views/scan', $data);

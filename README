@@ -1,6 +1,6 @@
-HDHRTV - a streaming server for the HDHomeRun PRIME cable tuner that can
-stream a native MPEG2 TS stream or transcoded flash stream. MythTV program
-listings can be displayed if a MythTV server is available.
+HDHRTV - a streaming server for both DLAN and non-DLNA HDHomeRun devices that
+can stream a native MPEG2 TS stream (DLNA devices only) or transcoded flash
+stream. MythTV program listings can be displayed if a MythTV server is available.
 
 
 1. Disclaimer
@@ -19,26 +19,35 @@ FFmpeg processes on a regular basis if the streaming server is being regularly u
 
 2. Overview
 
-The HDHomeRun PRIME is a CableCard tuner device capable of HTTP streaming the
-native MPEG2 TS digital cable stream tuned by the device over a network.
-Unfortunately, this stream is typically too large to stream over WiFi or outside
-the local network, though the native standard definition stream will stream okay,
-in most cases, over WiFi on the local network. In order to allow streaming to any
-location, HDHRTV transcodes the MPEG stream to a flash video and streams it via a
-web page. Though Apple devices have embraced HTML 5 and HTTP Live Streaming (HLS),
-it seems that the rest of the world is slow to get on board. Android seems to only
-have mild success with HLS depending on what 3rd party applications have been
-installed. As such, HDHRTV has been developed to stream Flash until the rest of the
-OS world catches up to HTML 5 and HLS streaming. If interested in setting up an HLS
-server for the HDHomeRun PRIME, consider using Wallop (http://jonmaddox.com/wallop/).
-For direct streaming using Android device, consider using MX Player or Daroon Player.
-Standard definition flash streaming should work on nearly any server. HD channels
-will require that a decent, modern processor be used for transcoding. Also note that
-a couple of ffmpeg configurations have been set up in the configuration file. One
-uses the original Sorenson flv codec. This codec cannot multithread, so it will 
-most likely not be effective transcoding HD channels. The other ffmpeg configuration
-uses h.264 video and mp3 audio in an flv container. This configuration is capable
-of multithreading and should be able to transcode HD video.
+HDHRTV was originally developed for the HDHomeRun PRIME, which is a CableCard
+tuner device capable of HTTP streaming the native MPEG2 TS digital cable stream
+tuned by the device over a network. Unfortunately, this stream is typically too
+large to stream over WiFi or outside the local network, though the native standard
+definition stream will stream okay, in most cases, over WiFi on the local network.
+In order to allow streaming to any location, HDHRTV transcodes the MPEG stream to
+a flash video and streams it via a web page. Though Apple devices have embraced
+HTML 5 and HTTP Live Streaming (HLS), it seems that the rest of the world is slow
+to get on board. Android seems to only have mild success with HLS depending on what
+3rd party applications have been installed. As such, HDHRTV has been developed to
+stream Flash until the rest of the OS world catches up to HTML 5 and HLS streaming.
+If interested in setting up an HLS server for the HDHomeRun PRIME, consider using
+Wallop (http://jonmaddox.com/wallop/). For direct streaming using Android device,
+consider using MX Player or Daroon Player. Standard definition flash streaming
+should work on nearly any server. HD channels will require that a decent, modern
+processor be used for transcoding. Also note that a couple of ffmpeg configurations
+have been set up in the configuration file. One uses the original Sorenson flv codec.
+This codec cannot multithread, so it will most likely not be effective transcoding
+HD channels. The other ffmpeg configuration uses h.264 video and mp3 audio in an
+flv container. This configuration is capable of multithreading and should be able
+to transcode HD video.
+
+The predecessors to the HDHomeRun PRIME were not capable of streaming directly
+ove HTTP, but HDHRTV can still stream a flash stream using these legacy devices.
+The server uses hdhomerun_config to create this stream. Please refer to the
+Silicon Dust website and documentation for installation instructions of
+hdhomerun_config. HDHRTV streaming of legacy, non-DLNA HDHomeRun devices was added in
+HDHRTV version 0.2.
+
 
 3. Credits
 
@@ -50,16 +59,17 @@ of multithreading and should be able to transcode HD video.
 
 4. License
 
-GPLv2 - see COPYING file.
+GPLv3 - see COPYING file.
 
 
 5. Requirements
 
-- HDHomeRun PRIME capable of HTTP streaming
+- HDHomeRun - either DLNA or non-DLNA
 - Apache or similar webserver
 - PHP >= 5.1
 - FFmpeg
 - MythTV (optional for channel listings and info)
+- hdhomerun_config utility is required if using legacy, non-DLNA HDHomeRun device.
 
 Development system: CentOS 6.4, Apache 2.2.15, PHP 5.3.3, MythTV .26,
 FFmpeg 1.2.4, HDHomeRun Prime.
@@ -73,17 +83,24 @@ Main Page / Listing:
   listing info will be retrieved from MythTV. If MythTV
   is not being used, then channel data will be retrieved
   from the HDHomeRun. The HDHomeRun only provides channel
-  number and name.
+  number and name. If using a legacy device, a channel
+  scan must be run from the settings page.
 - Channel icons can be shown on the channel listings.
   Icons are configured in ./config/channel_icon_map.php.
   Icons reside in ./public/images/channel_icons/
 - The play button on the left can be configured to start
   the flash player or provide a direct HTTP link to the
-  HDHomeRun PRIME.
+  HDHomeRun PRIME. Only flash player is available for 
+  non-DLNA devices.
 - If the direct link to the stream is selected, the client
   device must be configured to play this link. On Android,
   consider using MX Player or Daroon. On a standard computer,
   consider VLC.
+
+Favorites:
+- Favorite channels are listed by selecting the star icon from
+  the header menu. Favorite channels can be set by browsing to
+  the Favorties page then selecting 'Edit' from the header menu. 
 
 Channel Details:
 - The channel details page is shown when selecting the arrow
@@ -92,13 +109,21 @@ Channel Details:
   channel. If MythTV listings are being used, program details
   and start/stop time will be shown. From this details page,
   the user can select a link to play the channel via a direct
-  URL or via the flash player.  
+  URL or via the flash player. This direct link is only available
+  for DLNA devices.  
 
 Settings:
 - The user can adjust general and transcoding settings.
   The settings are stored in a user cookie. If cookies
   aren't enabled, then the default settings defined in the
   config file will be used. 
+
+Channel Scan:
+- Channel Scan is selected from the Settings page but is
+  only available if the HDHR is a legacy device as defined
+  in the config file. The channel scan must initially be run
+  before the streaming server can be functional when using
+  legacy HDHR devices.
 
 
 7. Installation
@@ -107,17 +132,19 @@ Settings:
 - Check and adjust file and directory permissions.
 - Make any additional adjustments to the server as necessary for the specific
   application directory, such as password protection, etc.  
-- Edit ./config/config.php. The config file contains three sections. The first
-  section contains the application settings, all defined in the $config[] array.
-  The next section contains the ffmpeg transcoding settings, all defined in the
-  $ffmpeg_cmd[] array. The last section contains the user settings, the
-  respective setting's selections, and the default setting, all within a nested
-  array defined by the $user_config[] array.
+- Copy ./config/config.php.dist to ./config/config.php. Edit ./config/config.php.
+  The config file contains three sections. The first section contains the
+  application settings, all defined in the $config[] array. The next section
+  contains the ffmpeg transcoding settings, all defined in the $ffmpeg_cmd[]
+  array. The last section contains the user settings, the respective setting's
+  selections, and the default setting, all within a nested array defined by the
+  $user_config[] array.
 - All of the config file settings are well documented.
 - Edit the ./config/channel_icon_map.php file to assign channel icon images to
   channel numbers. Add channel icon images to ./public/images/channel_icons 
   as necessary.
-
+- Run a channel scan from the Settings page if a legacy HDHR is being used and
+  defined in the config file.
 
 8. Tips and Tricks
 
@@ -125,10 +152,10 @@ Settings:
   Daroon Player depending on the hardware and Android version.
 - If HDHRTV is running on a server without enough processing power, it is possible 
   to use ssh and have another machine with greater processing capabilities take care of
-  transcoding. Revise the ffmpeg command lines from 'ffmpeg' to 'ssh user@remote ffmpeg'
-  in the config file. The remote machine will transfer its standard output to the server
-  running HDHRTV. Remote ssh keys will need to be set up to allow for apache, or whatever
-  user is used to run the webserver, to connect to the remote machine and execute ffmpeg.
+  transcoding. A line exists in the config file to define the ssh command. The remote
+  machine will transfer its standard output to the server running HDHRTV. Remote ssh keys
+  will need to be set up to allow for apache, or whatever user is used to run the webserver,
+  to connect to the remote machine and execute ffmpeg.
   See (http://mingstert.blogspot.com/2009/11/ssh-via-apache-deamon-user.html) 
 
 
@@ -149,10 +176,17 @@ Settings:
 - Add user option to terminate any orphaned ffmpeg processes.
 - Add more options and information to Flowplayer, such as 'now playing',
   adjust bitrate, mini-EPG. Mini-EPG could be a menu of favorite channels.
-- Favorite channels
-
+- Favorite channels (added in version 0.2)
+- Create a direct streaming wrapper to stream the full MPEG-TS file via HTTP
+  for legacy devices.
 
 11. History
+
+version 0.2 (2014-01-18)
+- add ability to use legacy, non-DLNA HDHomeRun devices
+- add 'Favorites' page and function
+- add transcoding option for Audio Only
+- refactored portions of code, improved error checking, and revised channel model
 
 version 0.1 (2013-11-23):
 - initial release

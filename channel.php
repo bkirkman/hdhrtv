@@ -1,7 +1,7 @@
 <?php
 /*
  * HDHRTV is a streaming web application for the HDHomeRun cable tuner
- * Copyright (C) 2013 Brian Kirkman (kirkman [dot] brian [at] gmail [dot] org)
+ * Copyright (C) 2013 Brian Kirkman (kirkman [dot] brian [at] gmail [dot] com)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,32 +20,50 @@
 
 	// Call this to load config settings and View class
 	include('./includes/main.php');
- 
+
+	// Load view 
+	$view = new View();
+
+	// Set page title
+	$data['page_title'] = $config['page_title'];
+
+        // Call this to load channel model
+        include('./models/channels_model.php');
+        $model = new Channels_model($config, $user_settings);
+        if (!$model->is_connected())
+        {
+                $data['message'] = $model->get_error();
+
+                // Display view
+                echo $view->display('views/notice', $data);
+                die();
+        }
+
 	// get channel
-	if (isset($_GET["id"]))
+	if (isset($_GET['id']) && $_GET['id'] != '' && $_GET['id'] != null)
 	{
 		$channel_id = $_GET["id"];
 	}
 	else
 	{
-		echo "No channel set.";
+		// Set message
+		$data['message'] = 'No Channel Set';
+
+		// Display view 
+		echo $view->display('views/notice', $data);
 		die();
 	}
 
-	//Use either MythTV database or HDHR data to create channels and info model
-	if ($user_settings['listings'] == 'mythtv' && $config['enable_mythtv'] == true)
-	{
-		include('./models/channels_mythtv_model.php');
-		$model = new Channels_mythtv_model($config);
-	}
-	else
-	{
-		include('./models/channels_hdhr_model.php');
-		$model = new Channels_hdhr_model($config);
-	}
-
 	//get channel data
-	$channel = $model->get_channel($channel_id);
+	if (!$channel = $model->get_channel($channel_id))
+	{
+		// Set message
+		$data['message'] = 'Invalid Channel. Channel ' . $channel_id . ' does not exist in the lineup.';
+
+		// Display view 
+		echo $view->display('views/notice', $data);
+		die();
+	}
 
 	// append subtitle to title if it exists
 	if ($channel['subtitle'] != "" )
@@ -53,13 +71,22 @@
 		$channel['title'] .= ' - ' . $channel['subtitle'];
 	}
 
+	// convert time strings
+	if ($channel['starttime'] != "" )
+	{
+		$channel['starttime'] = date('h:i', strtotime($channel['starttime'] .' UTC'));
+	}
+
+	if ($channel['endtime'] != "" )
+	{
+		$channel['endtime'] = date('h:i', strtotime($channel['endtime'] .' UTC'));
+	}
+
 	//load channel data into data variables for view
 	foreach ($channel as $key => $val)
 	{
 		$data[$key] = $val;
 	}
-
-
 
 	if (array_key_exists($data['channum'], $icon)) {
 		$data['icon'] = "public/images/channel_icons/{$icon[$data['channum']]}";
@@ -69,16 +96,18 @@
 		$data['icon'] = '';
 	}
 
-
-
-
 	//set links for playing channel
-	$data['link_direct'] = "{$config['hdhr_protocol']}://{$config['hdhr_ip']}:{$config['hdhr_port']}/{$config['hdhr_tuner']}/v{$channel['channum']}";
+	if ($config['hdhr_type'] == 'dlna')
+	{
+		$data['link_direct'] = "http://{$config['hdhr_ip']}:{$config['hdhr_port']}/{$config['hdhr_tuner']}/v{$channel['channum']}";
+	}
+	else
+	{
+		$data['link_direct'] = '';
+	}
+
 	$data['link_flash'] = "flashplayer.php?channel={$channel['channum']}";
 
-	// Set page title
-	$data['page_title'] = $config['page_title'];
 
-	// Load and display view 
-	$view = new View();
+	// Display view 
 	echo $view->display('views/channel', $data);

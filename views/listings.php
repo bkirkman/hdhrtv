@@ -11,53 +11,63 @@
 </head>
 
 <body>
-<div id='main'>
+  <div id='main'>
 
-<div id='fixed_header'>
-  <img src='public/images/tv_set.png' alt='tv_img' class='header_left'/>Current Listings
-  <a class='header_right' href='settings.php'><img src='public/images/settings.png' alt='settings'/></a>
-</div>
+    <div id='fixed_header'>
+      <img src='public/images/tv_set.png' alt='tv_img' class='header_left'/><?php echo $header_title; ?>
 
-<div id='header_spacer'>
-  <a id='page_top'> - </a>
-</div>
+      <?php if ($listing_type == 'home') {;?>
+      <a class='header_right2' href='index.php?favorites=true'><img src='public/images/fav_head.png' alt='favorites' title='favorites'/></a>
+      <?php } elseif ($listing_type == 'favorites') {;?>
+      <a class='header_right3' href='favorites.php'><img src='public/images/edit.png' alt='edit_favs' title='edit'/></a>
+      <a class='header_right2' href='./'><img src='public/images/home.png' alt='home' title='home'/></a>
+      <?php };?>
 
-<?php
+      <a class='header_right1' href='settings.php'><img src='public/images/settings.png' alt='settings' title='settings'/></a>
+    </div> <!-- fixed_header -->
+
+    <div id='header_spacer'>
+      <a id='page_top'> - </a>
+    </div>
+
+
+  <?php
+  {
     $dark = true;
 
     // loop through channels
     foreach ($channels as $row)
     {
-        if ($dark) {
-            $row_color  = "dark";
-        } else {
-            $row_color  = "";
-        }
-?>
+      if ($dark) {
+        $row_color  = "dark";
+      } else {
+        $row_color  = "";
+      }
+  ?>
 
     <div class='<?php echo $row_color;?>'>
       <div class='channel_row'>
         <a class='row_left' href='<?php echo $row['link_play'];?>'><img src='public/images/play.png' alt='play' title='play'></a>
-        <strong><?php echo $row['channum'];?> - <?php echo $row['name'];?></strong></br>
+        <strong><?php echo $row['channum'];?> - <?php echo $row['name'];?></strong><br/>
         <?php echo $row['title'];?>
 
-	<?php if ($row['icon'] != '') {;?>
+      <?php if ($row['icon'] != '') {;?>
         <img class='row_icon' src='<?php echo $row['icon'];?>' alt='icon' title='icon'>
-	<?php };?>
+      <?php };?>
 
         <a class='row_right' href='<?php echo $row['link_details'];?>'><img src='public/images/go-next.png' alt='details' title='details'></a>
-      </div>
+      </div> <!-- channel_row -->
+    </div> <!-- row_color -->
+
+  <?php
+    $dark = !$dark;
+    }
+  };?>
+
+    <div class='channel_row'>
+      <a class='row_right' href='#page_top'><img src='public/images/go-top.png' alt='top' title='top'></a>
     </div>
 
-<?php
-	$dark = !$dark;
-  	} 
-;?>
-
-<div class='channel_row'>
-<a class='row_right' href='#page_top'><img src='public/images/go-top.png' alt='top' title='top'></a>
-</div>
-
-</div> <!-- main -->
+  </div> <!-- main -->
 </body>
 </html>

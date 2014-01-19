@@ -1,7 +1,7 @@
 <?php
 /*
  * HDHRTV is a streaming web application for the HDHomeRun cable tuner
- * Copyright (C) 2013 Brian Kirkman (kirkman [dot] brian [at] gmail [dot] org)
+ * Copyright (C) 2013 Brian Kirkman (kirkman [dot] brian [at] gmail [dot] com)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,7 +20,7 @@
  
 class Settings
 {
-	protected $user_config;
+	private $user_config;
 
 	// The main user_config array from the config file
 	// is passed to the constructor 
@@ -31,10 +31,13 @@ class Settings
 
         public function get_user_settings()
         {
-                if (isset($_COOKIE[COOKIE_NAME]))
+                if (isset($_COOKIE[COOKIE_SETTINGS]))
                 {
                         //if the user settings cookie is retrieved, unserialize the settings
-                        $user_settings = unserialize($_COOKIE[COOKIE_NAME]);
+                        $user_settings = unserialize($_COOKIE[COOKIE_SETTINGS]);
+			
+			//scrub user settings
+			$user_settings = $this->_scrub_user_settings($user_settings);
                 }
                 else
                 {
@@ -46,6 +49,17 @@ class Settings
         }
 
 
+	public function get_default_user_settings()
+	{
+		foreach($this->user_config as $key => $val)
+		{
+			$user_settings[$key] = $val['default'];
+		}
+
+		return $user_settings;
+	}
+
+
         public function set_user_settings($user_settings)
         {
                 $this->_create_cookie($user_settings);
@@ -54,10 +68,9 @@ class Settings
 
         public function restore_defaults()
         {
-		$defaults = $this->_get_default_user_settings();
+		$defaults = $this->get_default_user_settings();
                 $this->_create_cookie($defaults);
         }
-
 
 	public function create_settings_dropdown($setting)
 	{
@@ -88,7 +101,7 @@ class Settings
 
         private function _create_default_cookie()
         {
-		$user_settings = $this->_get_default_user_settings();
+		$user_settings = $this->get_default_user_settings();
 
                 $this->_create_cookie($user_settings);
 
@@ -98,15 +111,47 @@ class Settings
 
         private function _create_cookie($user_settings)
         {
-                setcookie(COOKIE_NAME, serialize($user_settings), time() + 60 * 60 * 24 * 365 * 2);
+                setcookie(COOKIE_SETTINGS, serialize($user_settings), time() + 60 * 60 * 24 * 365 * 2);
         }
 
 
-	private function _get_default_user_settings()
+	// This adds defaults to user settings if they don't exist and
+	// deletes settings from user settings that are no longer part
+	// of the settings defined in the config and app.
+	private function _scrub_user_settings($user_settings)
 	{
-		foreach($this->user_config as $key => $val)
+		$scrubbed = false;
+		$default_settings = $this->get_default_user_settings();
+
+		// Iterate through user settings. If the key
+		// doesn't exist as a key in the default
+		// user setting array, dump it.
+		foreach($user_settings as $key => $val)
 		{
-			$user_settings[$key] = $val['default'];
+			if(!array_key_exists($key, $default_settings))
+			{
+				$scrubbed = true;
+				unset($user_settings[$key]);
+			}
+		}
+
+		// Iterate through default settings. If the key
+		// doesn't exist as a key in the user settings
+		// array, add the setting and it's default to the
+		// user settings array.
+		foreach($default_settings as $key => $val)
+		{
+			if(!array_key_exists($key, $user_settings))
+			{
+				$scrubbed = true;
+				$user_settings[$key] = $val;	
+			}
+		}
+
+		// save user settings in case of any scrubbing
+		if($scrubbed)
+		{
+			$this->_create_cookie($user_settings);
 		}
 
 		return $user_settings;

@@ -1,7 +1,7 @@
 <?php
 /*
  * HDHRTV is a streaming web application for the HDHomeRun cable tuner
- * Copyright (C) 2013 Brian Kirkman (kirkman [dot] brian [at] gmail [dot] org)
+ * Copyright (C) 2013 Brian Kirkman (kirkman [dot] brian [at] gmail [dot] com)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,8 +20,8 @@
  
 class View
 {
-	protected $template;
-	protected $fields = array();
+	private $template;
+	private $fields = array();
     
 	public function display($template, array $fields = array())
 	{

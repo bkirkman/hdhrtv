@@ -1,7 +1,7 @@
 <?php
 /*
  * HDHRTV is a streaming web application for the HDHomeRun cable tuner
- * Copyright (C) 2013 Brian Kirkman (kirkman [dot] brian [at] gmail [dot] org)
+ * Copyright (C) 2013 Brian Kirkman (kirkman [dot] brian [at] gmail [dot] com)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,20 +21,61 @@
 	// Call this to load config settings and classes
 	include('./includes/main.php');
 
-	//Use either MythTV database or HDHR data to create channels and info model
-	if ($user_settings['listings'] == 'mythtv' && $config['enable_mythtv'] == true)
+	// Load view
+	$view = new View();
+
+	// Set page title
+	$data['page_title'] = $config['page_title'];
+
+	// Call this to load channel model
+        include('./models/channels_model.php');
+        $model = new Channels_model($config, $user_settings);
+	if (!$model->is_connected())
 	{
-		include('./models/channels_mythtv_model.php');
-		$model = new Channels_mythtv_model($config);
+		$data['message'] = $model->get_error();
+
+		// Display view
+		echo $view->display('views/notice', $data);
+		die();
 	}
+
+        // Check if viewing favorites
+	$favorites = false;
+        if (isset($_GET["favorites"]))
+        {
+        	if ($_GET["favorites"] == 'true')
+                {
+			$favorites = true;
+			
+			// Set header title
+			$data['header_title'] = 'Favorites';
+			$data['listing_type'] = 'favorites';
+                }
+        }
 	else
 	{
-		include('./models/channels_hdhr_model.php');
-		$model = new Channels_hdhr_model($config);
+		// Set header title
+		$data['header_title'] = 'Current Listings';
+		$data['listing_type'] = 'home';
 	}
 
 	//get channels
-	$channels = $model->get_all();
+	if($favorites)
+	{
+		$favorites = new Favorites();
+		$favorite_channels = $favorites->get_favorites();
+		if(!$channels = $model->get_channels($favorite_channels))
+		{
+			$channels = array();
+		}
+	}
+	else
+	{
+		if(!$channels = $model->get_all())
+		{
+			$channels = array();
+		}
+	}
 
 	// edit channel data for use in view 
 	foreach ($channels as $key => $val)
@@ -56,10 +97,10 @@
 		$channels[$key]['link_details'] = "channel.php?id={$channels[$key]['channum']}";
 
 		// add link to channel play
-		if ($user_settings['play_link'] == "direct")
+		if ($user_settings['play_link'] == "direct" && $config['hdhr_type'] == "dlna")
 		{
 			$channels[$key]['link_play'] = 
-			"{$config['hdhr_protocol']}://{$config['hdhr_ip']}:{$config['hdhr_port']}/{$config['hdhr_tuner']}/v{$channels[$key]['channum']}";
+			"http://{$config['hdhr_ip']}:{$config['hdhr_port']}/{$config['hdhr_tuner']}/v{$channels[$key]['channum']}";
 		}
 		else
 		{
@@ -79,9 +120,5 @@
 	// Set channel data to display in view
 	$data['channels'] = $channels;
 
-	// Set page title
-	$data['page_title'] = $config['page_title'];
-
-	// Load and display view
-	$view = new View();
+	// Display view
 	echo $view->display('views/listings', $data);
