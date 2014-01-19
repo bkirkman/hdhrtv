@@ -1,4 +1,4 @@
-HDHRTV - a streaming server for both DLAN and non-DLNA HDHomeRun devices that
+HDHRTV - a streaming server for both DLNA and non-DLNA HDHomeRun devices that
 can stream a native MPEG2 TS stream (DLNA devices only) or transcoded flash
 stream. MythTV program listings can be displayed if a MythTV server is available.
 
